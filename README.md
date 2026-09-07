@@ -1,4 +1,4 @@
-# XXXXX Social
+# InvestaX Social
 
 ## Requirements
 
@@ -16,7 +16,7 @@ Simply install using npm: `npm install -g pnpm`
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/XXXXX/social.git
+git clone https://github.com/investax-io/social-app.git
 ```
 
 ### Install NVM and pnpm

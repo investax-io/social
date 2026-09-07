@@ -18,11 +18,11 @@ const Copyright = () => {
               <H4 className="mb-5">Notification of Copyright Infringement</H4>
               <div className="space-y-5">
                 <p className="leading-7">
-                  XXXXX respects the intellectual property rights of
+                  InvestaX respects the intellectual property rights of
                   others and expects its users to do the same.
                 </p>
                 <p className="leading-7">
-                  It is XXXXX's policy, in appropriate circumstances and at its
+                  It is InvestaX's policy, in appropriate circumstances and at its
                   discretion, to disable the accounts of users who repeatedly
                   infringe the copyrights of others.
                 </p>
@@ -37,11 +37,11 @@ const Copyright = () => {
                   >
                     http://www.copyright.gov/legislation/dmca.pdf
                   </Link>
-                  , XXXXX will respond expeditiously to claims of copyright
-                  infringement committed using the XXXXX website, app, or other
-                  XXXXX owned or controlled online network services accessible
+                  , InvestaX will respond expeditiously to claims of copyright
+                  infringement committed using the InvestaX website, app, or other
+                  InvestaX owned or controlled online network services accessible
                   through a mobile device or other type of device (the "Sites")
-                  that are reported to XXXXX's Designated Copyright Agent,
+                  that are reported to InvestaX's Designated Copyright Agent,
                   identified in the sample notice below.
                 </p>
                 <p className="leading-7">
@@ -50,8 +50,8 @@ const Copyright = () => {
                   under copyright, please report alleged copyright infringements
                   taking place on or through the Sites by completing the
                   following DMCA Notice of Alleged Infringement and delivering
-                  it to XXXXX's Designated Copyright Agent. Upon receipt of the
-                  Notice as described below, XXXXX will take whatever action, in
+                  it to InvestaX's Designated Copyright Agent. Upon receipt of the
+                  Notice as described below, InvestaX will take whatever action, in
                   its sole discretion, it deems appropriate, including removal
                   of the challenged material from the Sites.
                 </p>
@@ -106,11 +106,11 @@ const Copyright = () => {
                   physical signature.
                 </p>
                 <p className="leading-7">
-                  Deliver this Notice, with all items completed, to XXXXX's
+                  Deliver this Notice, with all items completed, to InvestaX's
                   Designated Copyright Agent:
                 </p>
                 <p className="leading-7">
-                  XXXXX Designated Copyright Agent: Yoginth
+                  InvestaX Designated Copyright Agent: Yoginth
                 </p>
               </div>
               {/* DMCA Notice of Alleged Infringement ("Notice") ends */}

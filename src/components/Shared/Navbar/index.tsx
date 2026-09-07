@@ -24,6 +24,7 @@ import {
 import { Link, useLocation } from "react-router";
 import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
 import { STATIC_IMAGES_URL } from "@/data/constants";
+import isSiteActive from "@/helpers/isSiteActive";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import {
   GroupsDocument,
@@ -35,6 +36,7 @@ import {
   TimelineDocument,
   TimelineHighlightsDocument
 } from "@/indexer/generated";
+import { useActivationModalStore } from "@/store/non-persisted/modal/useActivationModalStore";
 import { useAuthModalStore } from "@/store/non-persisted/modal/useAuthModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { useNotificationStore } from "@/store/persisted/useNotificationStore";
@@ -163,6 +165,7 @@ const Navbar = () => {
   const { pathname } = useLocation();
   const { currentAccount } = useAccountStore();
   const { setShowAuthModal } = useAuthModalStore();
+  const { setShowActivationModal } = useActivationModalStore();
 
   const handleLogoClick = useCallback(
     (e: MouseEvent<HTMLAnchorElement>) => {
@@ -175,8 +178,12 @@ const Navbar = () => {
   );
 
   const handleAuthClick = useCallback(() => {
+    if (!isSiteActive()) {
+      setShowActivationModal(true);
+      return;
+    }
     setShowAuthModal(true);
-  }, []);
+  }, [setShowActivationModal, setShowAuthModal]);
 
   return (
     <aside className="sticky top-5 mt-5 hidden w-10 shrink-0 flex-col items-center gap-y-5 md:flex">

