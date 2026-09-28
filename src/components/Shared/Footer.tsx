@@ -6,18 +6,18 @@ const links = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
   { href: "/guidelines", label: "Guidelines" },
-  { href: "https://medium.com/@InvestaX", label: "Medium" },
-  { href: "/u/InvestaX", label: "InvestaX" },
-  { href: "https://github.com/InvestaX/social", label: "GitHub" },
+  { href: "https://medium.com/@Alchemy", label: "Medium" },
+  { href: "/u/Alchemy", label: "Alchemy" },
+  { href: "https://github.com/Alchemy/social", label: "GitHub" },
   { href: "/support", label: "Support" },
-  { href: "https://InvestaX", label: "Status" }
+  { href: "https://Alchemy", label: "Status" }
 ];
 
 const Footer = () => {
   return (
     <footer className="flex flex-wrap gap-x-[12px] gap-y-2 px-3 text-sm lg:px-0">
       <span className="font-bold text-gray-500 dark:text-gray-200">
-        &copy; {currentYear} InvestaX
+        &copy; {currentYear} Alchemy
       </span>
       {links.map(({ href, label }) => (
         <Link

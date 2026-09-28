@@ -29,7 +29,7 @@ const SignupCard = () => {
         width={56}
       />
       <div className="space-y-3 text-center">
-        <div className="font-bold">Get your InvestaX account now!</div>
+        <div className="font-bold">Get your Alchemy account now!</div>
         <div>
           <Button onClick={handleSignupClick}>Signup now</Button>
         </div>

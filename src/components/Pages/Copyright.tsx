@@ -18,11 +18,11 @@ const Copyright = () => {
               <H4 className="mb-5">Notification of Copyright Infringement</H4>
               <div className="space-y-5">
                 <p className="leading-7">
-                  InvestaX respects the intellectual property rights of
+                  Alchemy respects the intellectual property rights of
                   others and expects its users to do the same.
                 </p>
                 <p className="leading-7">
-                  It is InvestaX's policy, in appropriate circumstances and at its
+                  It is Alchemy's policy, in appropriate circumstances and at its
                   discretion, to disable the accounts of users who repeatedly
                   infringe the copyrights of others.
                 </p>
@@ -37,11 +37,11 @@ const Copyright = () => {
                   >
                     http://www.copyright.gov/legislation/dmca.pdf
                   </Link>
-                  , InvestaX will respond expeditiously to claims of copyright
-                  infringement committed using the InvestaX website, app, or other
-                  InvestaX owned or controlled online network services accessible
+                  , Alchemy will respond expeditiously to claims of copyright
+                  infringement committed using the Alchemy website, app, or other
+                  Alchemy owned or controlled online network services accessible
                   through a mobile device or other type of device (the "Sites")
-                  that are reported to InvestaX's Designated Copyright Agent,
+                  that are reported to Alchemy's Designated Copyright Agent,
                   identified in the sample notice below.
                 </p>
                 <p className="leading-7">
@@ -50,8 +50,8 @@ const Copyright = () => {
                   under copyright, please report alleged copyright infringements
                   taking place on or through the Sites by completing the
                   following DMCA Notice of Alleged Infringement and delivering
-                  it to InvestaX's Designated Copyright Agent. Upon receipt of the
-                  Notice as described below, InvestaX will take whatever action, in
+                  it to Alchemy's Designated Copyright Agent. Upon receipt of the
+                  Notice as described below, Alchemy will take whatever action, in
                   its sole discretion, it deems appropriate, including removal
                   of the challenged material from the Sites.
                 </p>
@@ -106,11 +106,11 @@ const Copyright = () => {
                   physical signature.
                 </p>
                 <p className="leading-7">
-                  Deliver this Notice, with all items completed, to InvestaX's
+                  Deliver this Notice, with all items completed, to Alchemy's
                   Designated Copyright Agent:
                 </p>
                 <p className="leading-7">
-                  InvestaX Designated Copyright Agent: Yoginth
+                  Alchemy Designated Copyright Agent: Yoginth
                 </p>
               </div>
               {/* DMCA Notice of Alleged Infringement ("Notice") ends */}

@@ -1,4 +1,4 @@
-# InvestaX Social
+# Alchemy Social
 
 ## Requirements
 
