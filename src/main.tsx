@@ -39,7 +39,7 @@ const App = () => {
           <div
             aria-labelledby="activation-dialog-title"
             aria-modal="true"
-            className="relative flex h-[300px] w-[450px] max-w-[calc(100vw-2rem)] flex-col justify-center bg-white p-6 text-center shadow-xl dark:bg-gray-800"
+            className="relative flex h-[350px] w-[500px] max-w-[calc(100vw-2rem)] flex-col justify-center bg-white p-6 text-center shadow-xl dark:bg-gray-800"
             role="dialog"
           >
             {showActivation ? (
@@ -57,26 +57,25 @@ const App = () => {
                   className="font-semibold text-[22px]"
                   id="activation-dialog-title"
                 >
-                  Secure access
+                  Secure Access
                 </h1>
                 <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                  Enter the secure access code issued to you by an authorized
-                  administrator.
+                  Enter the registration code issued to you by an authorized administrator.
                 </p>
                 <form
                   className="mt-6 flex flex-col gap-4 text-left"
                   onSubmit={handleActivation}
                 >
                   <Input
-                    aria-label="Activation code"
-                    label="Activation code"
+                    aria-label="Registration code"
+                    label="Registration code"
                     onChange={(event) => setActivationCode(event.target.value)}
-                    placeholder="Enter your secure access code"
+                    placeholder="Enter your registration code"
                     required
                     value={activationCode}
                   />
                   <Button className="self-end text-lg" type="submit">
-                    Activate
+                    Register
                   </Button>
                 </form>
               </>
@@ -92,17 +91,18 @@ const App = () => {
                   className="font-semibold text-[22px]"
                   id="activation-dialog-title"
                 >
-                  Restricted access
+                  Access Restricted
                 </h1>
                 <p className="mt-3 text-base text-gray-500 leading-6 dark:text-gray-400">
-                  This workspace is available to authorized users only. Please
-                  contact your administrator to request an access code.
+                  This platform is available only from an authorized company network. <br />
+                  Please follow configuration instruction from your administrator to register your IP address and get a registration code. <br />
+                  Enter the code below to activate your session.
                 </p>
                 <Button
                   className="mx-auto mt-6 text-lg"
                   onClick={() => setShowActivation(true)}
                 >
-                  Activate
+                  Go To Register
                 </Button>
               </>
             )}
