@@ -74,6 +74,7 @@ const App = () => {
                     required
                     value={activationCode}
                   />
+                  <br />
                   <Button className="self-end text-lg" type="submit">
                     Register
                   </Button>
@@ -94,8 +95,9 @@ const App = () => {
                   Access Restricted
                 </h1>
                 <p className="mt-3 text-base text-gray-500 leading-6 dark:text-gray-400">
-                  This platform is available only from an authorized company network. <br />
-                  Please follow configuration instruction from your administrator to register your IP address and get a registration code. <br />
+                  This platform is available only on authorized company networks. Please follow your administrator's instructions to register your IP address and obtain an access code.
+                  <br />
+                  <br />
                   Enter the code below to activate your session.
                 </p>
                 <Button
