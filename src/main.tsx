@@ -57,10 +57,16 @@ const App = () => {
                   className="font-semibold text-[22px]"
                   id="activation-dialog-title"
                 >
-                  Secure Access
+                  Secure Your Connection
                 </h1>
-                <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                  Enter the registration code issued to you by an authorized administrator.
+                <p className="mt-2 text-base text-gray-500 dark:text-gray-400" style={{textAlign: 'left'}}>
+                  Enter the registration code issued to you by following instructions.
+                </p>
+                <p className="mt-2 text-base text-gray-500 dark:text-gray-400" style={{textAlign: 'left'}}>
+                  Your temporary session provides:<br/>
+                  ✓ Product environment only<br/>
+                  ✓ 7-days access<br/>
+                  ✓ Automatic expiration
                 </p>
                 <form
                   className="mt-6 flex flex-col gap-4 text-left"
@@ -76,7 +82,7 @@ const App = () => {
                   />
                   <br />
                   <Button className="self-end text-lg" type="submit">
-                    Register
+                    Activate
                   </Button>
                 </form>
               </>
@@ -94,7 +100,7 @@ const App = () => {
                 >
                   Access Restricted
                 </h1>
-                <p className="mt-3 text-base text-gray-500 leading-6 dark:text-gray-400">
+                <p className="mt-3 text-base text-gray-500 leading-6 dark:text-gray-400" style={{textAlign: 'left'}}>
                   This platform is available only on authorized company networks. Please follow your administrator's instructions to register your IP address and obtain an access code.
                   <br />
                   <br />
