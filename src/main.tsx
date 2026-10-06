@@ -39,7 +39,7 @@ const App = () => {
           <div
             aria-labelledby="activation-dialog-title"
             aria-modal="true"
-            className="relative flex h-[350px] w-[500px] max-w-[calc(100vw-2rem)] flex-col justify-center bg-white p-6 text-center shadow-xl dark:bg-gray-800"
+            className="relative flex h-[360px] w-[500px] max-w-[calc(100vw-2rem)] flex-col justify-center bg-white p-6 text-center shadow-xl dark:bg-gray-800"
             role="dialog"
           >
             {showActivation ? (
@@ -80,7 +80,6 @@ const App = () => {
                     required
                     value={activationCode}
                   />
-                  <br />
                   <Button className="self-end text-lg" type="submit">
                     Activate
                   </Button>
