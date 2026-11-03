@@ -28,8 +28,8 @@ const Privacy = () => {
                   This Privacy Policy (the “Privacy Policy”) provides a
                   comprehensive description of how Alchemy (“we,” “our,” or “us”)
                   collects, uses, and shares information about you in connection
-                  with the Alchemy website, as well as your rights and
-                  choices regarding such information.
+                  with the Alchemy website, as well as your rights and choices
+                  regarding such information.
                 </p>
                 <p className="leading-7">
                   By accessing or using the Site, you accept and assume certain
@@ -59,6 +59,12 @@ const Privacy = () => {
                   <li className="leading-7">
                     Information you provide such as feedback, questions, and
                     issue reports.
+                  </li>
+                  <li className="leading-7">
+                    If you sign up using email in this demo, the full name you
+                    submit is shown in the administrator activity log. Demo
+                    records are held in server memory and may be lost when the
+                    server restarts.
                   </li>
                 </ul>
                 <p className="leading-7">
@@ -195,7 +201,7 @@ const Privacy = () => {
               <p className="leading-7">
                 If you have any questions or comments about this Privacy Policy,
                 our data practices, or our compliance with applicable law,
-                please contact us at support@Alchemy.io
+                please contact us at XXX_SUPPORT_EMAIL
               </p>
               {/* 10. Contact ends */}
             </div>

@@ -65,8 +65,20 @@ const ChooseUsername = () => {
     setScreen("minting");
   };
 
-  const onError = useCallback((error?: any) => {
+  const onError = useCallback((error?: unknown) => {
     setIsSubmitting(false);
+
+    if (
+      error instanceof Error &&
+      error.message.includes("must be routed through the approval popup")
+    ) {
+      toast.error(
+        "Family couldn't complete the wallet approval. Please retry and approve the request in Family.",
+        { id: "error" }
+      );
+      return;
+    }
+
     errorToast(error);
   }, []);
 
@@ -97,7 +109,11 @@ const ChooseUsername = () => {
   const canCheck = Boolean(username && username.length > 2);
   const isInvalid = !form.formState.isValid;
 
-  useAccountQuery({
+  const {
+    error: availabilityError,
+    loading: isCheckingAvailability,
+    refetch: retryAvailabilityCheck
+  } = useAccountQuery({
     fetchPolicy: "no-cache",
     onCompleted: (data) => setIsAvailable(!data.account),
     skip: !canCheck,
@@ -111,6 +127,11 @@ const ChooseUsername = () => {
   }: z.infer<typeof ValidationSchema>) => {
     try {
       setIsSubmitting(true);
+
+      if (!address) {
+        throw new Error("Connect a wallet before signing up.");
+      }
+
       await handleWrongNetwork();
 
       const challenge = await loadChallenge({
@@ -138,7 +159,6 @@ const ChooseUsername = () => {
         const metadataUri = await uploadMetadata(
           accountMetadata({ name: username })
         );
-
         setOnboardingToken(accessToken);
         return await createAccountWithUsername({
           context: { headers: { "X-Access-Token": accessToken } },
@@ -150,16 +170,21 @@ const ChooseUsername = () => {
           }
         });
       }
-
       return onError({ message: ERRORS.SomethingWentWrong });
-    } catch {
-      onError();
+    } catch (error: unknown) {
+      onError(error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const disabled = !canCheck || !isAvailable || isSubmitting || isInvalid;
+  const disabled =
+    !canCheck ||
+    isAvailable !== true ||
+    isCheckingAvailability ||
+    Boolean(availabilityError) ||
+    isSubmitting ||
+    isInvalid;
 
   return (
     <div className="space-y-5">
@@ -178,7 +203,20 @@ const ChooseUsername = () => {
             prefix="@lens/"
             {...form.register("username")}
           />
-          {canCheck && !isInvalid ? (
+          {availabilityError ? (
+            <div className="mt-2 flex items-center justify-between gap-2 text-red-500 text-sm">
+              <span>Could not check username availability.</span>
+              <button
+                className="shrink-0 underline"
+                onClick={() => {
+                  void retryAvailabilityCheck().catch(onError);
+                }}
+                type="button"
+              >
+                Retry
+              </button>
+            </div>
+          ) : canCheck && !isInvalid ? (
             isAvailable === false ? (
               <div className="mt-2 flex items-center space-x-1 text-red-500 text-sm">
                 <FaceFrownIcon className="size-4" />
@@ -189,6 +227,10 @@ const ChooseUsername = () => {
                 <CheckIcon className="size-4" />
                 <b>You're in luck - it's available!</b>
               </div>
+            ) : isCheckingAvailability ? (
+              <output className="mt-2 flex items-center space-x-1 text-gray-500 text-sm dark:text-gray-200">
+                Checking username availability…
+              </output>
             ) : null
           ) : canCheck && isInvalid ? (
             <div className="mt-2 flex items-center space-x-1 text-red-500 text-sm">
@@ -204,7 +246,7 @@ const ChooseUsername = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button
-            className="w-full"
+            className="h-10 w-full"
             disabled={disabled}
             loading={isSubmitting}
             type="submit"

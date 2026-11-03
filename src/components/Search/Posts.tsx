@@ -2,6 +2,7 @@ import { ChatBubbleBottomCenterIcon } from "@heroicons/react/24/outline";
 import { useCallback } from "react";
 import SinglePost from "@/components/Post/SinglePost";
 import PostFeed from "@/components/Shared/Post/PostFeed";
+import { EmptyState } from "@/components/Shared/UI";
 import {
   PageSize,
   type PostsRequest,
@@ -13,12 +14,15 @@ interface PostsProps {
 }
 
 const Posts = ({ query }: PostsProps) => {
+  const searchQuery = query.trim();
+  const queryIsTooShort = searchQuery.length < 3;
   const request: PostsRequest = {
-    filter: { searchQuery: query },
+    filter: { searchQuery },
     pageSize: PageSize.Fifty
   };
 
   const { data, error, fetchMore, loading } = usePostsQuery({
+    skip: queryIsTooShort,
     variables: { request }
   });
 
@@ -33,6 +37,15 @@ const Posts = ({ query }: PostsProps) => {
       });
     }
   }, [fetchMore, hasMore, pageInfo?.next, request]);
+
+  if (queryIsTooShort) {
+    return (
+      <EmptyState
+        icon={<ChatBubbleBottomCenterIcon className="size-8" />}
+        message="Enter at least 3 characters to search posts."
+      />
+    );
+  }
 
   return (
     <PostFeed

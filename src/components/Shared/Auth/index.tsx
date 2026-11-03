@@ -8,7 +8,11 @@ import Signup from "./Signup";
 
 const NotConnected = ({ isLogin }: { isLogin?: boolean }) => (
   <AuthMessage
-    description="Connect with our wallet provider to access your account."
+    description={
+      isLogin
+        ? "Continue with email or connect a wallet to access your account."
+        : "Continue with email or connect a wallet to create your account."
+    }
     title={`${isLogin ? "Login" : "Signup"} to Alchemy.`}
   />
 );

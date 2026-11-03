@@ -11,7 +11,7 @@ const Support = () => {
           <H3>Support</H3>
           <p className="mt-3">
             For assistance, please email us at{" "}
-            <Link to="mailto:support@alchemy.com">support@alchemy.com</Link> with a
+            <Link to="mailto:XXX_SUPPORT_EMAIL">XXX_SUPPORT_EMAIL</Link> with a
             detailed description of your issue and how we can assist you.
           </p>
           <div className="my-5 flex flex-col space-y-2">
@@ -29,7 +29,7 @@ const Support = () => {
           </div>
           <p className="text-gray-500 text-sm">
             Send any legal requests to{" "}
-            <Link to="mailto:legal@avatgarde.social">legal@avatgarde.social</Link>
+            <Link to="mailto:XXX_SUPPORT_EMAIL">XXX_SUPPORT_EMAIL</Link>
           </p>
         </div>
       </Card>

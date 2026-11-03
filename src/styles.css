@@ -162,3 +162,28 @@
     cursor: pointer;
   }
 }
+
+.left-menu-typography,
+.left-menu-typography * {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.right-menu-typography,
+.right-menu-typography * {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.right-rail-search label > div > div {
+  background-color: var(--color-gray-200);
+}
+
+:where(.dark, .dark *) .right-rail-search label > div > div {
+  background-color: var(--color-gray-900);
+}
+
+.home-page-typography,
+.home-page-typography * {
+  font-size: 15px;
+}

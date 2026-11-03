@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router";
 import Layout from "@/components/Common/Layout";
 import FullPageLoader from "@/components/Shared/FullPageLoader";
+import RequireLogin from "@/components/Shared/RequireLogin";
 
 const AccountMonetizeSettings = lazy(
   () => import("@/components/Settings/Monetize")
@@ -15,6 +16,7 @@ const AccountRecoverySettings = lazy(
 const AccountSettings = lazy(() => import("@/components/Settings"));
 const BlockedSettings = lazy(() => import("@/components/Settings/Blocked"));
 const Bookmarks = lazy(() => import("@/components/Bookmarks"));
+const Admin = lazy(() => import("@/components/Admin"));
 const Copyright = lazy(() => import("@/components/Pages/Copyright"));
 const Custom404 = lazy(() => import("@/components/Shared/404"));
 const DeveloperSettings = lazy(() => import("@/components/Settings/Developer"));
@@ -32,43 +34,115 @@ const GroupSettings = lazy(() => import("@/components/Group/Settings"));
 const Groups = lazy(() => import("@/components/Groups"));
 const Guidelines = lazy(() => import("@/components/Pages/Guidelines"));
 const Home = lazy(() => import("@/components/Home"));
+const Leaderboard = lazy(() => import("@/components/Leaderboard"));
 const ManagerSettings = lazy(() => import("@/components/Settings/Manager"));
 const Notification = lazy(() => import("@/components/Notification"));
+const Premium = lazy(() => import("@/components/Premium"));
 const Privacy = lazy(() => import("@/components/Pages/Privacy"));
 const RewardsSettings = lazy(() => import("@/components/Settings/Rewards"));
 const RulesSettings = lazy(() => import("@/components/Group/Settings/Rules"));
 const Search = lazy(() => import("@/components/Search"));
 const SessionsSettings = lazy(() => import("@/components/Settings/Sessions"));
 const Support = lazy(() => import("@/components/Pages/Support"));
+const Stocks = lazy(() => import("@/components/Stocks"));
 const Terms = lazy(() => import("@/components/Pages/Terms"));
 const UsernameSettings = lazy(() => import("@/components/Settings/Username"));
 const ViewAccount = lazy(() => import("@/components/Account"));
 const ViewGroup = lazy(() => import("@/components/Group"));
 const ViewPost = lazy(() => import("@/components/Post"));
+const Wallet = lazy(() => import("@/components/Wallet"));
 
 const Routes = () => {
   return (
     <BrowserRouter>
       <Suspense fallback={<FullPageLoader />}>
         <RouterRoutes>
+          <Route element={<Admin />} path="/adminuseronlyadminaccessible" />
           <Route element={<Layout />} path="/">
             <Route element={<Home />} index />
-            <Route element={<Explore />} path="explore" />
-            <Route element={<Search />} path="search" />
-            <Route element={<Groups />} path="groups" />
-            <Route element={<Bookmarks />} path="bookmarks" />
-            <Route element={<Notification />} path="notifications" />
+            <Route
+              element={
+                <RequireLogin>
+                  <Explore />
+                </RequireLogin>
+              }
+              path="explore"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Search />
+                </RequireLogin>
+              }
+              path="search"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Groups />
+                </RequireLogin>
+              }
+              path="groups"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Bookmarks />
+                </RequireLogin>
+              }
+              path="bookmarks"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Notification />
+                </RequireLogin>
+              }
+              path="notifications"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Wallet />
+                </RequireLogin>
+              }
+              path="wallet"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Stocks />
+                </RequireLogin>
+              }
+              path="stocks"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Premium />
+                </RequireLogin>
+              }
+              path="premium"
+            />
+            <Route
+              element={
+                <RequireLogin>
+                  <Leaderboard />
+                </RequireLogin>
+              }
+              path="leaderboard"
+            />
             <Route element={<ViewAccount />} path="account/:address" />
             <Route element={<ViewAccount />} path="u/:username" />
             <Route path="g/:address">
               <Route element={<ViewGroup />} index />
-              <Route path="settings">
+              <Route element={<RequireLogin />} path="settings">
                 <Route element={<GroupSettings />} index />
                 <Route
                   element={<GroupPersonalizeSettings />}
                   path="personalize"
                 />
-                  <Route element={<GroupRecoverySettings />} path="recovery" />
+                <Route element={<GroupRecoverySettings />} path="recovery" />
                 <Route element={<GroupMonetizeSettings />} path="monetize" />
                 <Route element={<RulesSettings />} path="rules" />
               </Route>

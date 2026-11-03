@@ -23,7 +23,7 @@ const Logout = ({ className = "", onClick }: LogoutProps) => {
   return (
     <button
       className={cn(
-        "flex w-full items-center space-x-1.5 px-2 py-1.5 text-left text-gray-700 text-sm dark:text-gray-200",
+        "flex w-full items-center space-x-2 px-2 py-1.5 text-left font-normal text-base text-brand-600",
         className
       )}
       onClick={async () => {
@@ -32,8 +32,8 @@ const Logout = ({ className = "", onClick }: LogoutProps) => {
       }}
       type="button"
     >
-      <ArrowRightStartOnRectangleIcon className="size-4" />
-      <div>Logout</div>
+      <ArrowRightStartOnRectangleIcon className="size-5" />
+      <div>Log Out</div>
     </button>
   );
 };

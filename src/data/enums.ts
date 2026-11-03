@@ -1,4 +1,5 @@
 export enum HomeFeedType {
+  DISCOVER = "DISCOVER",
   FOLLOWING = "FOLLOWING",
   FORYOU = "FORYOU",
   HIGHLIGHTS = "HIGHLIGHTS"

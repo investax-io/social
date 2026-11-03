@@ -16,7 +16,7 @@ Simply install using npm: `npm install -g pnpm`
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/investax-io/social-app.git
+git clone https://github.com/Alchemy/social.git
 ```
 
 ### Install NVM and pnpm
@@ -61,6 +61,19 @@ The example environment files define the following variables:
 
 - `PRIVATE_KEY` - Private key used to sign Lens requests.
 - `SHARED_SECRET` - Token for internal API authorization.
+
+#### Admin demo page
+
+`/adminuseronlyadminaccessible` authenticates through server-side API handlers
+using demo credentials declared in `api/admin/runtime.ts`. The demo records
+visitor IP addresses and inferred operating systems in process memory, grouping
+visits by IP and retaining up to the latest 1,000 visits. Admin-only wallet and
+password-manager labels are also held in memory per IP. Records and labels can
+be lost when a development or serverless process restarts and are not shared
+reliably between instances. The normal app checks the matching IP's wallet
+preference and shows a site-owned address reminder when navigating outside Home,
+Profile, and Settings; this behavior is not reliable across Vercel serverless
+instances.
 
 ### Start the Development Server
 

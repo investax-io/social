@@ -4,15 +4,16 @@ import {
   CodeBracketIcon,
   CurrencyDollarIcon,
   FingerPrintIcon,
-  LockClosedIcon,
   GiftIcon,
   GlobeAltIcon,
+  LockClosedIcon,
   NoSymbolIcon,
   PaintBrushIcon
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
 import SingleAccount from "@/components/Shared/Account/SingleAccount";
 import BackButton from "@/components/Shared/BackButton";
+import Logout from "@/components/Shared/Navbar/NavItems/Logout";
 import NotLoggedIn from "@/components/Shared/NotLoggedIn";
 import PageLayout from "@/components/Shared/PageLayout";
 import { Card, CardHeader } from "@/components/Shared/UI";
@@ -100,6 +101,9 @@ const AccountSettings = () => {
               <ArrowRightIcon className="size-4" />
             </Link>
           ))}
+        </div>
+        <div className="divider py-3">
+          <Logout className="px-5 py-3 hover:bg-gray-100 dark:hover:bg-gray-800" />
         </div>
       </Card>
     </PageLayout>

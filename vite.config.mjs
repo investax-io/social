@@ -2,6 +2,43 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import {
+  handleAdminActivity,
+  handleAdminAuth,
+  handleAdminSignup
+} from "./api/admin/runtime.ts";
+
+const adminApiPlugin = {
+  configurePreviewServer(server) {
+    server.middlewares.use((request, response, next) => {
+      const path = request.url?.split("?")[0];
+      if (path === "/api/admin/auth") {
+        void handleAdminAuth(request, response);
+      } else if (path === "/api/admin/activity") {
+        void handleAdminActivity(request, response);
+      } else if (path === "/api/admin/signup") {
+        void handleAdminSignup(request, response);
+      } else {
+        next();
+      }
+    });
+  },
+  configureServer(server) {
+    server.middlewares.use((request, response, next) => {
+      const path = request.url?.split("?")[0];
+      if (path === "/api/admin/auth") {
+        void handleAdminAuth(request, response);
+      } else if (path === "/api/admin/activity") {
+        void handleAdminActivity(request, response);
+      } else if (path === "/api/admin/signup") {
+        void handleAdminSignup(request, response);
+      } else {
+        next();
+      }
+    });
+  },
+  name: "admin-api"
+};
 
 export default defineConfig({
   build: {
@@ -16,10 +53,6 @@ export default defineConfig({
       }
     }
   },
-  plugins: [
-    tsconfigPaths(),
-    react(),
-    tailwindcss()
-  ],
+  plugins: [adminApiPlugin, tsconfigPaths(), react(), tailwindcss()],
   preview: { allowedHosts: true }
 });

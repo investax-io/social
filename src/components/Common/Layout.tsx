@@ -3,6 +3,7 @@ import { useIsClient } from "@uidotdev/usehooks";
 import { lazy, memo, Suspense, useCallback, useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import { Toaster, type ToasterProps } from "sonner";
+import { AddressBackupReminderProvider } from "@/components/Common/AddressBackupReminder";
 import FullPageLoader from "@/components/Shared/FullPageLoader";
 import GlobalAlerts from "@/components/Shared/GlobalAlerts";
 import Navbar from "@/components/Shared/Navbar";
@@ -48,7 +49,7 @@ const Layout = () => {
   }
 
   return (
-    <>
+    <AddressBackupReminderProvider>
       <Toaster
         icons={{
           error: <XCircleIcon className="size-5" />,
@@ -67,12 +68,12 @@ const Layout = () => {
       </Suspense>
       <GlobalAlerts />
       <ReloadTabsWatcher />
-      <div className="mx-auto flex w-full max-w-6xl items-start gap-x-8 px-0 md:px-5">
+      <div className="mx-auto flex w-full max-w-[1440px] items-start gap-x-6 px-0 md:px-5">
         <Navbar />
         <Outlet />
         <BottomNavigation />
       </div>
-    </>
+    </AddressBackupReminderProvider>
   );
 };
 

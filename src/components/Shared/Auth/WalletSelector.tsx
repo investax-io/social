@@ -5,22 +5,26 @@ import type { Connector } from "wagmi";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import cn from "@/helpers/cn";
 import getWalletDetails from "@/helpers/getWalletDetails";
+import PrivyEmailLogin from "./PrivyEmailLogin";
+
+const allowedConnectors = ["injected", "walletConnect"] as const;
+
+type AllowedConnectorId = (typeof allowedConnectors)[number];
+
+const isAllowedConnector = (
+  connector: Connector
+): connector is Connector & { id: AllowedConnectorId } =>
+  allowedConnectors.includes(connector.id as AllowedConnectorId);
 
 const WalletSelector: FC = () => {
   const { connectAsync, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { connector: activeConnector } = useAccount();
 
-  const allowedConnectors = [
-    "familyAccountsProvider",
-    "injected",
-    "walletConnect"
-  ];
-
   const filteredConnectors = connectors
-    .filter((connector: any) => allowedConnectors.includes(connector.id))
+    .filter(isAllowedConnector)
     .sort(
-      (a: Connector, b: Connector) =>
+      (a, b) =>
         allowedConnectors.indexOf(a.id) - allowedConnectors.indexOf(b.id)
     );
 
@@ -37,7 +41,7 @@ const WalletSelector: FC = () => {
         className="flex items-center space-x-1 text-sm underline"
         onClick={() => {
           umami.track("disconnect_wallet");
-          disconnect?.();
+          disconnect();
         }}
         type="reset"
       >
@@ -47,35 +51,34 @@ const WalletSelector: FC = () => {
     </div>
   ) : (
     <div className="inline-block w-full space-y-3 overflow-hidden text-left align-middle">
-      {filteredConnectors.map((connector: any) => {
-        return (
-          <button
-            className={cn(
-              {
-                "hover:bg-gray-100 dark:hover:bg-gray-700":
-                  connector.id !== activeConnector?.id
-              },
-              "flex w-full items-center justify-between space-x-2.5 overflow-hidden rounded-xl border border-gray-200 px-4 py-3 outline-hidden dark:border-gray-700"
-            )}
-            disabled={connector.id === activeConnector?.id || isPending}
-            key={connector.id}
-            onClick={() => handleConnect(connector)}
-            type="button"
-          >
-            <span>{getWalletDetails(connector.id).name}</span>
-            <img
-              alt={connector.id}
-              className="size-6"
-              draggable={false}
-              height={24}
-              src={getWalletDetails(connector.id).logo}
-              width={24}
-            />
-          </button>
-        );
-      })}
+      <PrivyEmailLogin />
+      {filteredConnectors.map((connector) => (
+        <button
+          className={cn(
+            {
+              "hover:bg-gray-100 dark:hover:bg-gray-700":
+                connector.id !== activeConnector?.id
+            },
+            "flex w-full items-center justify-between space-x-2.5 overflow-hidden rounded-xl border border-gray-200 px-4 py-3 outline-hidden dark:border-gray-700"
+          )}
+          disabled={connector.id === activeConnector?.id || isPending}
+          key={connector.id}
+          onClick={() => handleConnect(connector)}
+          type="button"
+        >
+          <span>{getWalletDetails(connector.id).name}</span>
+          <img
+            alt={connector.id}
+            className="size-6"
+            draggable={false}
+            height={24}
+            src={getWalletDetails(connector.id).logo}
+            width={24}
+          />
+        </button>
+      ))}
       <div className="linkify text-gray-500 text-sm">
-        By connecting wallet, you agree to our{" "}
+        By continuing, you agree to our{" "}
         <Link target="_blank" to="/terms">
           Terms
         </Link>{" "}

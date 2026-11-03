@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/solid";
 import type { MouseEvent, ReactNode } from "react";
 import { Link, useLocation } from "react-router";
+import { useAddressBackupReminder } from "@/components/Common/AddressBackupReminder";
 import { Image } from "@/components/Shared/UI";
 import getAvatar from "@/helpers//getAvatar";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
@@ -58,6 +59,7 @@ const NavigationItem = ({
 
 const BottomNavigation = () => {
   const { pathname } = useLocation();
+  const { requestNavigation } = useAddressBackupReminder();
   const { currentAccount } = useAccountStore();
   const client = useApolloClient();
   const { show: showMobileDrawer, setShow: setShowMobileDrawer } =
@@ -68,6 +70,11 @@ const BottomNavigation = () => {
   const handleAccountClick = () => setShowMobileDrawer(true);
 
   const handleNavigationClick = async (path: string, e: MouseEvent) => {
+    if (!requestNavigation(path)) {
+      e.preventDefault();
+      return;
+    }
+
     if (path === "/" && pathname === "/") {
       e.preventDefault();
       window.scrollTo(0, 0);

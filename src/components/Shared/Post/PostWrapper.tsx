@@ -24,7 +24,11 @@ const PostWrapper = ({ children, className = "", post }: PostWrapperProps) => {
   };
 
   return (
-    <article className={className} onClick={handleClick} ref={rootRef}>
+    <article
+      className={`${className} transition-colors hover:bg-gray-200 dark:hover:bg-gray-800`}
+      onClick={handleClick}
+      ref={rootRef}
+    >
       {children}
     </article>
   );

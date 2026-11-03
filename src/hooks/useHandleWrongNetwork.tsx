@@ -1,4 +1,5 @@
-import { useAccount, useSwitchChain } from "wagmi";
+import { useConfig, useSwitchChain } from "wagmi";
+import { getAccount } from "wagmi/actions";
 import { CHAIN } from "@/data/constants";
 
 interface HandleWrongNetworkParams {
@@ -6,11 +7,12 @@ interface HandleWrongNetworkParams {
 }
 
 const useHandleWrongNetwork = () => {
-  const { chainId: activeChainId, isConnected } = useAccount();
+  const config = useConfig();
   const { switchChainAsync } = useSwitchChain();
 
   const handleWrongNetwork = async (params?: HandleWrongNetworkParams) => {
     const chainId = params?.chainId ?? CHAIN.id;
+    const { chainId: activeChainId, isConnected } = getAccount(config);
 
     if (!isConnected) {
       throw new Error("No active wallet connection found.");

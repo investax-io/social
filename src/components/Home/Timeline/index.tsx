@@ -8,6 +8,7 @@ import {
   useTimelineQuery
 } from "@/indexer/generated";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
+import FollowingEmptyState from "../FollowingEmptyState";
 
 const Timeline = () => {
   const { currentAccount } = useAccountStore();
@@ -49,10 +50,14 @@ const Timeline = () => {
     [feed]
   );
 
+  if (!loading && !error && !filteredPosts.length) {
+    return <FollowingEmptyState />;
+  }
+
   return (
     <PostFeed
       emptyIcon={<UserGroupIcon className="size-8" />}
-      emptyMessage="No posts yet!"
+      emptyMessage="Follow people to see their posts in your feed."
       error={error}
       errorTitle="Failed to load timeline"
       handleEndReached={handleEndReached}

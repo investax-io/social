@@ -1,5 +1,7 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { type MouseEvent, useCallback } from "react";
 import { Link } from "react-router";
+import { useAddressBackupReminder } from "@/components/Common/AddressBackupReminder";
 import AccountLink from "@/components/Shared/Account/AccountLink";
 import SingleAccount from "@/components/Shared/Account/SingleAccount";
 import Bookmarks from "@/components/Shared/Navbar/NavItems/Bookmarks";
@@ -18,11 +20,23 @@ import { useAccountStore } from "@/store/persisted/useAccountStore";
 
 const MobileDrawerMenu = () => {
   const { currentAccount } = useAccountStore();
+  const { requestNavigation } = useAddressBackupReminder();
   const { setShow: setShowMobileDrawer } = useMobileDrawerModalStore();
 
   const handleCloseDrawer = () => {
     setShowMobileDrawer(false);
   };
+
+  const handleMenuNavigation = useCallback(
+    (path: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+      if (!requestNavigation(path)) {
+        event.preventDefault();
+        return;
+      }
+      handleCloseDrawer();
+    },
+    [requestNavigation]
+  );
 
   const itemClass = "py-3 hover:bg-gray-100 dark:hover:bg-gray-800";
 
@@ -57,16 +71,19 @@ const MobileDrawerMenu = () => {
             >
               <YourAccount className={cn(itemClass, "px-4")} />
             </AccountLink>
-            <Link onClick={handleCloseDrawer} to="/settings/rewards">
+            <Link
+              onClick={handleMenuNavigation("/settings/rewards")}
+              to="/settings/rewards"
+            >
               <Rewards className={cn(itemClass, "px-4")} />
             </Link>
             <Link onClick={handleCloseDrawer} to="/settings">
               <Settings className={cn(itemClass, "px-4")} />
             </Link>
-            <Link onClick={handleCloseDrawer} to="/groups">
+            <Link onClick={handleMenuNavigation("/groups")} to="/groups">
               <Groups className={cn(itemClass, "px-4")} />
             </Link>
-            <Link onClick={handleCloseDrawer} to="/bookmarks">
+            <Link onClick={handleMenuNavigation("/bookmarks")} to="/bookmarks">
               <Bookmarks className={cn(itemClass, "px-4")} />
             </Link>
             <ThemeSwitch
@@ -78,7 +95,7 @@ const MobileDrawerMenu = () => {
         </div>
         <div className="bg-white dark:bg-gray-900">
           <div className="divider" />
-          <Link onClick={handleCloseDrawer} to="/support">
+          <Link onClick={handleMenuNavigation("/support")} to="/support">
             <Support className={cn(itemClass, "px-4")} />
           </Link>
           <div className="divider" />

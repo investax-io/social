@@ -1,4 +1,3 @@
-import { familyAccountsConnector } from "family";
 import type { ReactNode } from "react";
 import { http } from "viem";
 import { base } from "viem/chains";
@@ -12,7 +11,6 @@ import {
 import getRpc from "@/helpers/getRpc";
 
 const connectors = [
-  familyAccountsConnector(),
   walletConnect({ projectId: WALLETCONNECT_PROJECT_ID }),
   injected()
 ];

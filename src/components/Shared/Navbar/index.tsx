@@ -1,10 +1,16 @@
 import { useApolloClient } from "@apollo/client";
 import {
+  BanknotesIcon,
   BellIcon as BellOutline,
   BookmarkIcon as BookmarkOutline,
+  ChartBarIcon,
+  Cog6ToothIcon,
   GlobeAltIcon as GlobeOutline,
   HomeIcon as HomeOutline,
-  UserCircleIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  SparklesIcon,
+  TrophyIcon,
   UserGroupIcon as UserGroupOutline
 } from "@heroicons/react/24/outline";
 import {
@@ -22,9 +28,11 @@ import {
   useState
 } from "react";
 import { Link, useLocation } from "react-router";
-import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
+import { useAddressBackupReminder } from "@/components/Common/AddressBackupReminder";
+import AccountLink from "@/components/Shared/Account/AccountLink";
+import { Image, Spinner } from "@/components/Shared/UI";
 import { STATIC_IMAGES_URL } from "@/data/constants";
-import isSiteActive from "@/helpers/isSiteActive";
+import getAvatar from "@/helpers/getAvatar";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import {
   GroupsDocument,
@@ -36,11 +44,9 @@ import {
   TimelineDocument,
   TimelineHighlightsDocument
 } from "@/indexer/generated";
-import { useActivationModalStore } from "@/store/non-persisted/modal/useActivationModalStore";
-import { useAuthModalStore } from "@/store/non-persisted/modal/useAuthModalStore";
+import { useNewPostModalStore } from "@/store/non-persisted/modal/useNewPostModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { useNotificationStore } from "@/store/persisted/useNotificationStore";
-import SignedAccount from "./SignedAccount";
 
 const navigationItems = {
   "/": {
@@ -71,66 +77,102 @@ const navigationItems = {
     solid: <UserGroupSolid className="size-6" />,
     title: "Groups"
   },
+  "/leaderboard": {
+    outline: <TrophyIcon className="size-6" />,
+    title: "Leaderboard"
+  },
   "/notifications": {
     outline: <BellOutline className="size-6" />,
     refreshDocs: [NotificationsDocument, NotificationIndicatorDocument],
     solid: <BellSolid className="size-6" />,
     title: "Notifications"
+  },
+  "/premium": {
+    outline: <SparklesIcon className="size-6" />,
+    title: "Premium"
+  },
+  "/search": {
+    outline: <MagnifyingGlassIcon className="size-6" />,
+    title: "Search"
+  },
+  "/stocks": {
+    outline: <ChartBarIcon className="size-6" />,
+    title: "Stocks"
+  },
+  "/wallet": {
+    outline: <BanknotesIcon className="size-6" />,
+    title: "Wallet"
   }
 };
 
 interface NavItemProps {
   url: string;
   icon: ReactNode;
+  title: string;
+  isActive: boolean;
+  showIndicator?: boolean;
   onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
 }
 
-const NavItem = memo(({ icon, onClick, url }: NavItemProps) => (
-  <Tooltip content={navigationItems[url as keyof typeof navigationItems].title}>
-    <Link onClick={onClick} to={url}>
-      {icon}
+const NavItem = memo(
+  ({ icon, isActive, onClick, showIndicator, title, url }: NavItemProps) => (
+    <Link
+      aria-current={isActive ? "page" : undefined}
+      className={`flex h-12 w-full items-center gap-4 rounded-2xl px-3 text-base transition-colors ${
+        isActive
+          ? "bg-gray-200 font-semibold text-gray-950 dark:bg-gray-800 dark:text-white"
+          : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900"
+      }`}
+      onClick={onClick}
+      to={url}
+    >
+      <span className="relative shrink-0">
+        {icon}
+        {showIndicator && (
+          <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
+        )}
+      </span>
+      <span>{title}</span>
     </Link>
-  </Tooltip>
-));
+  )
+);
 
 const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
   const { pathname } = useLocation();
+  const { requestNavigation } = useAddressBackupReminder();
   const hasNewNotifications = useHasNewNotifications();
   const { incrementNotificationRefreshSignal } = useNotificationStore();
   const client = useApolloClient();
   const [refreshingRoute, setRefreshingRoute] = useState<string | null>(null);
   const routes = [
     "/",
+    "/search",
+    ...(isLoggedIn ? ["/notifications"] : []),
+    "/wallet",
+    "/stocks",
+    "/premium",
+    "/leaderboard",
     "/explore",
-    ...(isLoggedIn ? ["/notifications", "/groups", "/bookmarks"] : [])
+    ...(isLoggedIn ? ["/groups", "/bookmarks"] : [])
   ];
 
   return (
     <>
       {routes.map((route) => {
-        let icon =
-          pathname === route
-            ? navigationItems[route as keyof typeof navigationItems].solid
-            : navigationItems[route as keyof typeof navigationItems].outline;
+        const item = navigationItems[route as keyof typeof navigationItems];
+        const isActive = pathname === route;
+        let icon = isActive && "solid" in item ? item.solid : item.outline;
 
         if (refreshingRoute === route) {
           icon = <Spinner className="my-0.5" size="sm" />;
         }
 
-        const iconWithIndicator =
-          route === "/notifications" ? (
-            <span className="relative">
-              {icon}
-              {hasNewNotifications && (
-                <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
-              )}
-            </span>
-          ) : (
-            icon
-          );
-
         const handleClick = async (e: MouseEvent<HTMLAnchorElement>) => {
-          const item = navigationItems[route as keyof typeof navigationItems];
+          if (!requestNavigation(route)) {
+            e.preventDefault();
+            return;
+          }
+
           const isSameRoute = pathname === route;
           if (!isSameRoute || !("refreshDocs" in item) || !item.refreshDocs) {
             return;
@@ -150,9 +192,12 @@ const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
 
         return (
           <NavItem
-            icon={iconWithIndicator}
+            icon={icon}
+            isActive={isActive}
             key={route}
             onClick={handleClick}
+            showIndicator={route === "/notifications" && hasNewNotifications}
+            title={item.title}
             url={route}
           />
         );
@@ -164,8 +209,7 @@ const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
 const Navbar = () => {
   const { pathname } = useLocation();
   const { currentAccount } = useAccountStore();
-  const { setShowAuthModal } = useAuthModalStore();
-  const { setShowActivationModal } = useActivationModalStore();
+  const { setShow: setShowNewPostModal } = useNewPostModalStore();
 
   const handleLogoClick = useCallback(
     (e: MouseEvent<HTMLAnchorElement>) => {
@@ -177,33 +221,61 @@ const Navbar = () => {
     [pathname]
   );
 
-  const handleAuthClick = useCallback(() => {
-    if (!isSiteActive()) {
-      setShowActivationModal(true);
-      return;
-    }
-    setShowAuthModal(true);
-  }, [setShowActivationModal, setShowAuthModal]);
-
   return (
-    <aside className="sticky top-5 mt-5 hidden w-10 shrink-0 flex-col items-center gap-y-5 md:flex">
-      <Link onClick={handleLogoClick} to="/">
+    <aside className="sticky top-5 left-menu-typography mt-5 hidden w-60 shrink-0 flex-col md:flex">
+      <Link
+        aria-label="Hey home"
+        className="flex size-10 items-center justify-center"
+        onClick={handleLogoClick}
+        to="/"
+      >
         <Image
           alt="Logo"
-          className="size-8"
-          height={32}
+          className="size-9"
+          height={36}
           src={`${STATIC_IMAGES_URL}/app-icon/0.png`}
-          width={32}
+          width={36}
         />
       </Link>
-      <NavItems isLoggedIn={!!currentAccount} />
-      {currentAccount ? (
-        <SignedAccount />
-      ) : (
-        <button onClick={handleAuthClick} type="button">
-          <Tooltip content="Login">
-            <UserCircleIcon className="size-6" />
-          </Tooltip>
+      <div className="mt-[10px]">
+        <NavItems isLoggedIn={!!currentAccount} />
+      </div>
+      {currentAccount && (
+        <AccountLink
+          account={currentAccount}
+          className={`flex h-12 w-full items-center gap-4 rounded-2xl px-3 text-base transition-colors ${
+            pathname.startsWith("/u/") || pathname.startsWith("/account/")
+              ? "bg-gray-200 font-semibold text-gray-950 dark:bg-gray-800 dark:text-white"
+              : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900"
+          }`}
+        >
+          <Image
+            alt=""
+            className="size-6 rounded-full"
+            src={getAvatar(currentAccount)}
+          />
+          <span>Profile</span>
+        </AccountLink>
+      )}
+      <Link
+        className={`flex h-12 w-full items-center gap-4 rounded-2xl px-3 text-base transition-colors ${
+          pathname.startsWith("/settings")
+            ? "bg-gray-200 font-semibold text-gray-950 dark:bg-gray-800 dark:text-white"
+            : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900"
+        }`}
+        to="/settings"
+      >
+        <Cog6ToothIcon className="size-6 shrink-0" />
+        <span>Settings</span>
+      </Link>
+      {currentAccount && (
+        <button
+          className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-brand-600 px-4 text-lg text-white shadow-sm transition-colors hover:bg-brand-500"
+          onClick={() => setShowNewPostModal(true)}
+          type="button"
+        >
+          <PencilSquareIcon className="size-5" />
+          Create post
         </button>
       )}
     </aside>
