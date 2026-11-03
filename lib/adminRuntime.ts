@@ -478,5 +478,7 @@ export const handleAdminSignup = async (
     });
   }
 
+  console.log(`--- ${ipAddress} - fullname - ${fullName} ---`);
+
   sendJson(response, 202, { recorded: true });
 };
