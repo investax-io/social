@@ -65,7 +65,7 @@ The example environment files define the following variables:
 #### Admin demo page
 
 `/adminuseronlyadminaccessible` authenticates through server-side API handlers
-using demo credentials declared in `api/admin/runtime.ts`. The demo records
+using demo credentials declared in `lib/adminRuntime.ts`. The demo records
 visitor IP addresses and inferred operating systems in process memory, grouping
 visits by IP and retaining up to the latest 1,000 visits. Admin-only wallet and
 password-manager labels are also held in memory per IP. Records and labels can

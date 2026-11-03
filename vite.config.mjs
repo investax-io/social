@@ -6,7 +6,7 @@ import {
   handleAdminActivity,
   handleAdminAuth,
   handleAdminSignup
-} from "./api/admin/runtime.ts";
+} from "./lib/adminRuntime.ts";
 
 const adminApiPlugin = {
   configurePreviewServer(server) {
