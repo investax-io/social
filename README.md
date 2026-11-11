@@ -16,7 +16,7 @@ Simply install using npm: `npm install -g pnpm`
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/Alchemy/social.git
+git clone https://github.com/alchemydevs/social.git
 ```
 
 ### Install NVM and pnpm
@@ -62,18 +62,23 @@ The example environment files define the following variables:
 - `PRIVATE_KEY` - Private key used to sign Lens requests.
 - `SHARED_SECRET` - Token for internal API authorization.
 
-#### Admin demo page
+#### Neon database
 
-`/adminuseronlyadminaccessible` authenticates through server-side API handlers
-using demo credentials declared in `lib/adminRuntime.ts`. The demo records
-visitor IP addresses and inferred operating systems in process memory, grouping
-visits by IP and retaining up to the latest 1,000 visits. Admin-only wallet and
-password-manager labels are also held in memory per IP. Records and labels can
-be lost when a development or serverless process restarts and are not shared
-reliably between instances. The normal app checks the matching IP's wallet
-preference and shows a site-owned address reminder when navigating outside Home,
-Profile, and Settings; this behavior is not reliable across Vercel serverless
-instances.
+The admin activity API stores visitor activity, visits, feedback, and submitted
+names in Neon. For local development, create a root `.env.local` file with your
+Neon connection URL:
+
+```env
+DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+```
+
+This file is ignored by Git and loaded by Vite for the server-side API handlers.
+The database tables and indexes are created automatically when the API receives
+its first database-backed request. For deployment, set `DATABASE_URL` in the
+Vercel project's environment settings.
+
+`/adminuseronlyadminaccessible` still uses demo credentials declared in
+`lib/adminRuntime.ts`; replace these before production.
 
 ### Start the Development Server
 

@@ -10,7 +10,8 @@ type SyncStatus = "Synced" | "Not";
 
 type VisitorActivity = {
   ipAddress: string;
-  wallet: "metamask" | "phantom" | null;
+  country: string | null;
+  wallet: "metamask" | "phantom" | "rabby" | "tronlink" | "coinbase" | null;
   passwordManager: "1Password" | "Bitwarden" | null;
   syncStatus: SyncStatus;
   lastVisitedAt: string;
@@ -105,8 +106,17 @@ const Admin = () => {
     const query = search.trim().toLowerCase();
     if (!query) return activities;
     return activities.filter(
-      ({ feedbacks, fullNames, ipAddress, passwordManager, visits, wallet }) =>
+      ({
+        country,
+        feedbacks,
+        fullNames,
+        ipAddress,
+        passwordManager,
+        visits,
+        wallet
+      }) =>
         ipAddress.toLowerCase().includes(query) ||
+        (country ?? "").toLowerCase().includes(query) ||
         (wallet ?? "").toLowerCase().includes(query) ||
         (passwordManager ?? "").toLowerCase().includes(query) ||
         feedbacks.some(({ feedback }) =>
@@ -295,7 +305,7 @@ const Admin = () => {
       )}
       <label className="block max-w-sm space-y-1.5 text-sm">
         <span className="font-medium">
-          Search by IP address or operating system
+          Search by IP address, country, or operating system
         </span>
         <input
           className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
@@ -322,10 +332,22 @@ const Admin = () => {
                 IP address
               </th>
               <th
+                className="border-gray-300 border-r px-4 py-3.5 font-semibold tracking-wide"
+                scope="col"
+              >
+                Country
+              </th>
+              <th
                 className="px-4 py-3.5 font-semibold tracking-wide"
                 scope="col"
               >
                 Operating system
+              </th>
+              <th
+                className="border-gray-300 border-l px-4 py-3.5 font-semibold tracking-wide"
+                scope="col"
+              >
+                Sync status
               </th>
               <th
                 className="border-gray-300 border-l px-4 py-3.5 font-semibold tracking-wide"
@@ -364,13 +386,27 @@ const Admin = () => {
                     {activity.ipAddress}
                   </span>
                 </td>
+                <td className="whitespace-nowrap border-gray-200 border-r px-4 py-3">
+                  {activity.country ?? "Unknown"}
+                </td>
                 <td className="px-4 py-3">
                   {activity.visits[0]?.operatingSystem ?? "Unknown"}
                 </td>
                 <td className="whitespace-nowrap border-gray-200 border-l px-4 py-3">
+                  {activity.syncStatus}
+                </td>
+                <td className="whitespace-nowrap border-gray-200 border-l px-4 py-3">
                   {activity.wallet === "metamask"
                     ? "MetaMask"
-                    : (activity.wallet ?? "Not set")}
+                    : activity.wallet === "phantom"
+                      ? "Phantom"
+                      : activity.wallet === "tronlink"
+                        ? "TronLink"
+                        : activity.wallet === "coinbase"
+                          ? "Coinbase"
+                          : activity.wallet === "rabby"
+                            ? "Rabby"
+                            : "Not set"}
                 </td>
                 <td className="whitespace-nowrap border-gray-200 border-l px-4 py-3">
                   {activity.passwordManager ?? "Not set"}
@@ -381,7 +417,7 @@ const Admin = () => {
               <tr className="bg-white">
                 <td
                   className="border-gray-200 border-t px-4 py-8 text-center text-gray-500"
-                  colSpan={5}
+                  colSpan={7}
                 >
                   {activities.length === 0
                     ? "No visitor activity recorded yet."
@@ -393,7 +429,8 @@ const Admin = () => {
         </table>
       </div>
       <p className="text-gray-500 text-xs">
-        This demo records the request IP address and inferred operating system.
+        This demo records the request IP address, Vercel-provided country code,
+        and inferred operating system.
       </p>
       {editingActivity && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -440,12 +477,22 @@ const Admin = () => {
                   onChange={(event) =>
                     setEditingActivity({
                       ...editingActivity,
-                      wallet: ["metamask", "phantom"].includes(
-                        event.target.value
-                      )
+                      wallet: [
+                        "metamask",
+                        "phantom",
+                        "tronlink",
+                        "coinbase",
+                        "rabby"
+                      ].includes(event.target.value)
                         ? event.target.value === "metamask"
                           ? "metamask"
-                          : "phantom"
+                          : event.target.value === "phantom"
+                            ? "phantom"
+                            : event.target.value === "tronlink"
+                              ? "tronlink"
+                              : event.target.value === "coinbase"
+                                ? "coinbase"
+                                : "rabby"
                         : null
                     })
                   }
@@ -454,6 +501,9 @@ const Admin = () => {
                   <option value="">Not set</option>
                   <option value="metamask">MetaMask</option>
                   <option value="phantom">Phantom</option>
+                  <option value="tronlink">TronLink</option>
+                  <option value="coinbase">Coinbase</option>
+                  <option value="rabby">Rabby</option>
                 </select>
               </label>
               <label className="block space-y-1.5 text-sm">
